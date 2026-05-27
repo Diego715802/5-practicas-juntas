@@ -3,6 +3,8 @@ import { useAuthStore } from '../stores/auth'
 
 const routes = [
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
+  { path: '/catalogo', name: 'catalogo', component: () => import('../views/CatalogoView.vue') },
+  { path: '/carrito', name: 'carrito', component: () => import('../views/CartView.vue') },
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
   { 
     path: '/admin', 
@@ -20,7 +22,7 @@ const router = createRouter({
   routes
 })
 
-// Guarda global de navegación [cite: 266]
+// Guarda global de navegación
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
