@@ -1,21 +1,26 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getProductos, createProducto, updateProducto, deleteProducto } from '@/services/productoService'
+import api from '@/plugins/axios'
 
 const productos = ref([])
+const categorias = ref([])
 const mensaje = ref({ texto: '', tipo: '' })
 const isEditing = ref(false)
-const cargando = ref(false) // Spinner de carga
-const imagenFile = ref(null) // Archivo físico
-const preview = ref(null) // URL temporal para preview
+const cargando = ref(false) 
+const imagenFile = ref(null) 
+const preview = ref(null) 
 
-const formData = ref({ id: null, nombre: '', descripcion: '', precio: 0, stock: 0 })
+const formData = ref({ id: null, nombre: '', descripcion: '', precio: 0, stock: 0, categoria_id: '' })
 
 const cargarProductos = async () => {
   cargando.value = true
   try {
+    const catRes = await api.get('/categorias')
+    categorias.value = catRes.data.data || catRes.data
+
     const respuesta = await getProductos()
-    productos.value = respuesta.data
+    productos.value = respuesta.data.data || respuesta.data
   } catch (error) {
     mostrarMensaje('Error al cargar inventario', 'error')
   } finally {
@@ -25,7 +30,6 @@ const cargarProductos = async () => {
 
 onMounted(() => cargarProductos())
 
-// Manejo de la imagen [cite: 388, 389, 391, 392]
 const onImageChange = (e) => {
   const file = e.target.files[0]
   if (!file) return
@@ -35,13 +39,13 @@ const onImageChange = (e) => {
 
 const guardarProducto = async () => {
   cargando.value = true
-  // Crear el FormData [cite: 383, 394, 395]
   const fd = new FormData()
   fd.append('nombre', formData.value.nombre)
   fd.append('descripcion', formData.value.descripcion || '')
   fd.append('precio', formData.value.precio)
   fd.append('stock', formData.value.stock)
-  if (imagenFile.value) fd.append('imagen', imagenFile.value) // Agrega imagen [cite: 398]
+  fd.append('categoria_id', formData.value.categoria_id || '')
+  if (imagenFile.value) fd.append('imagen', imagenFile.value) 
 
   try {
     if (isEditing.value) {
@@ -61,8 +65,8 @@ const guardarProducto = async () => {
 }
 
 const editarProducto = (producto) => {
-  formData.value = { ...producto }
-  preview.value = producto.imagen_url // Muestra la imagen actual del server
+  formData.value = { ...producto, categoria_id: producto.categoria_id || '' }
+  preview.value = producto.imagen_url 
   imagenFile.value = null
   isEditing.value = true
 }
@@ -83,14 +87,13 @@ const eliminarProducto = async (id) => {
 }
 
 const limpiarFormulario = () => {
-  formData.value = { id: null, nombre: '', descripcion: '', precio: 0, stock: 0 }
+  formData.value = { id: null, nombre: '', descripcion: '', precio: 0, stock: 0, categoria_id: '' }
   imagenFile.value = null
   preview.value = null
   isEditing.value = false
-  document.getElementById('fileInput').value = '' // Resetea el input file
+  document.getElementById('fileInput').value = '' 
 }
 
-// Alerta con auto-cierre (setTimeout) [cite: 418]
 const mostrarMensaje = (texto, tipo) => {
   mensaje.value = { texto, tipo }
   setTimeout(() => { mensaje.value.texto = '' }, 3000)
@@ -100,6 +103,7 @@ const mostrarMensaje = (texto, tipo) => {
 <template>
   <div class="container">
     <h1>Gestión de Productos</h1>
+    
     <div v-if="mensaje.texto" :class="['alert', mensaje.tipo === 'exito' ? 'success' : 'error']">
       {{ mensaje.texto }}
     </div>
@@ -111,10 +115,22 @@ const mostrarMensaje = (texto, tipo) => {
           <label>Nombre:</label>
           <input v-model="formData.nombre" type="text" required />
         </div>
+        
         <div class="form-group">
           <label>Descripción:</label>
           <textarea v-model="formData.descripcion"></textarea>
         </div>
+
+        <div class="form-group">
+          <label>Categoría:</label>
+          <select v-model="formData.categoria_id">
+            <option value="">Sin categoría</option>
+            <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
+              {{ cat.nombre }}
+            </option>
+          </select>
+        </div>
+
         <div style="display: flex; gap: 15px;">
           <div class="form-group" style="flex: 1;">
             <label>Precio:</label>
@@ -152,6 +168,7 @@ const mostrarMensaje = (texto, tipo) => {
           <tr>
             <th>Foto</th>
             <th>Nombre</th>
+            <th>Categoría</th>
             <th>Precio</th>
             <th>Stock</th>
             <th>Acciones</th>
@@ -163,6 +180,7 @@ const mostrarMensaje = (texto, tipo) => {
               <img :src="producto.imagen_url || '/img/placeholder.png'" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" @error="e => e.target.src = '/img/placeholder.png'" />
             </td>
             <td>{{ producto.nombre }}</td>
+            <td>{{ producto.categoria ? producto.categoria.nombre : 'Sin categoría' }}</td>
             <td>${{ producto.precio }}</td>
             <td>{{ producto.stock }}</td>
             <td>
@@ -181,7 +199,7 @@ const mostrarMensaje = (texto, tipo) => {
 .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: white; }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-.form-group input, .form-group textarea { width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; }
 .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; color: white; font-weight: bold; }
 .btn-primary { background-color: #4CAF50; }
 .btn-primary:disabled { background-color: #9E9E9E; cursor: not-allowed; }

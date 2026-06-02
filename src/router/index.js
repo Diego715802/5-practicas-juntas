@@ -6,6 +6,7 @@ const routes = [
   { path: '/catalogo', name: 'catalogo', component: () => import('../views/CatalogoView.vue') },
   { path: '/carrito', name: 'carrito', component: () => import('../views/CartView.vue') },
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+ 
   { 
     path: '/admin', 
     meta: { requiresAuth: true },
@@ -13,6 +14,7 @@ const routes = [
       { path: '', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
       { path: 'productos', name: 'productos', component: () => import('../views/admin/Productos.vue') },
       { path: 'nuevo', name: 'nuevo', component: () => import('../views/admin/NuevoProducto.vue') }
+      
     ]
   }
 ]
