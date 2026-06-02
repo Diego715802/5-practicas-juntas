@@ -1,10 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getProductos, createProducto, updateProducto, deleteProducto } from '@/services/productoService'
 import api from '@/plugins/axios'
+import PaginacionNav from '@/components/PaginacionNav.vue' // Importamos tu navegador de páginas
+import { createProducto, updateProducto, deleteProducto } from '@/services/productoService'
 
 const productos = ref([])
 const categorias = ref([])
+const metaPaginacion = ref({}) // Aquí guardaremos "lo de los links" y meta
+const paginaActual = ref(1)
+
 const mensaje = ref({ texto: '', tipo: '' })
 const isEditing = ref(false)
 const cargando = ref(false) 
@@ -19,16 +23,28 @@ const cargarProductos = async () => {
     const catRes = await api.get('/categorias')
     categorias.value = catRes.data.data || catRes.data
 
-    const respuesta = await getProductos()
-    productos.value = respuesta.data.data || respuesta.data
+    // Pedimos los productos enviando la página actual
+    const respuesta = await api.get('/productos', {
+      params: { page: paginaActual.value, por_pagina: 5 }
+    })
+    
+    productos.value = respuesta.data.data 
+    metaPaginacion.value = respuesta.data.meta // Guardamos los metadatos de paginación
   } catch (error) {
     mostrarMensaje('Error al cargar inventario', 'error')
+    console.error(error)
   } finally {
     cargando.value = false
   }
 }
 
 onMounted(() => cargarProductos())
+
+// Función que escucha cuando haces clic en "Siguiente" o "Anterior"
+const cambiarPagina = (nuevaPagina) => {
+  paginaActual.value = nuevaPagina
+  cargarProductos()
+}
 
 const onImageChange = (e) => {
   const file = e.target.files[0]
@@ -163,33 +179,42 @@ const mostrarMensaje = (texto, tipo) => {
     <div class="card mt-2">
       <h2>Inventario</h2>
       <div v-if="cargando" style="text-align: center; padding: 20px;">Cargando base de datos... ⏳</div>
-      <table v-else>
-        <thead>
-          <tr>
-            <th>Foto</th>
-            <th>Nombre</th>
-            <th>Categoría</th>
-            <th>Precio</th>
-            <th>Stock</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="producto in productos" :key="producto.id">
-            <td>
-              <img :src="producto.imagen_url || '/img/placeholder.png'" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" @error="e => e.target.src = '/img/placeholder.png'" />
-            </td>
-            <td>{{ producto.nombre }}</td>
-            <td>{{ producto.categoria ? producto.categoria.nombre : 'Sin categoría' }}</td>
-            <td>${{ producto.precio }}</td>
-            <td>{{ producto.stock }}</td>
-            <td>
-              <button @click="editarProducto(producto)" class="btn btn-edit">Editar</button>
-              <button @click="eliminarProducto(producto.id)" class="btn btn-danger">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else>
+        <table>
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="producto in productos" :key="producto.id">
+              <td>
+                <img :src="producto.imagen_url || 'https://via.placeholder.com/50'" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" @error="e => e.target.src = 'https://via.placeholder.com/50'" />
+              </td>
+              <td>{{ producto.nombre }}</td>
+              <td>{{ producto.categoria ? producto.categoria.nombre : 'Sin categoría' }}</td>
+              <td>${{ producto.precio }}</td>
+              <td>{{ producto.stock }}</td>
+              <td>
+                <button @click="editarProducto(producto)" class="btn btn-edit">Editar</button>
+                <button @click="eliminarProducto(producto.id)" class="btn btn-danger">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <!-- AQUI ESTÁ LA MAGIA DE LOS LINKS -->
+        <PaginacionNav 
+          v-if="metaPaginacion && metaPaginacion.last_page > 1" 
+          :meta="metaPaginacion" 
+          @cambio-pagina="cambiarPagina" 
+        />
+      </div>
     </div>
   </div>
 </template>
