@@ -12,9 +12,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: '', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
-      { path: 'productos', name: 'productos', component: () => import('../views/admin/Productos.vue') },
-      { path: 'nuevo', name: 'nuevo', component: () => import('../views/admin/NuevoProducto.vue') }
-      
+      { path: 'productos', name: 'productos', component: () => import('../views/admin/Productos.vue') }
     ]
   }
 ]

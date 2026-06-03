@@ -19,8 +19,9 @@ const cerrarSesion = () => {
     <div class="nav-links">
       <RouterLink to="/" class="nav-item">Inicio</RouterLink>
       <RouterLink to="/catalogo" class="nav-item">Catálogo</RouterLink>
-      <RouterLink to="/admin/productos" class="nav-item">Inventario Admin</RouterLink>
       
+      <!-- Magia aquí: Se oculta si el rol es 'cliente' -->
+      <RouterLink v-if="auth.user?.rol !== 'cliente'" to="/admin/productos" class="nav-item">Inventario Admin</RouterLink>
     </div>
     
     <div class="nav-actions">
@@ -37,6 +38,13 @@ const cerrarSesion = () => {
         <RouterLink to="/login" class="login-btn">Iniciar Sesión</RouterLink>
       </template>
       <template v-else>
+        <!-- Magia aquí: Mostramos el nombre y una etiqueta con el rol -->
+        <span style="color: white; margin-right: 15px; display: flex; align-items: center; gap: 8px;">
+          Hola, <strong>{{ auth.user?.name || 'Usuario' }}</strong>
+          <span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; text-transform: uppercase; font-weight: bold;">
+            {{ auth.user?.rol }}
+          </span>
+        </span>
         <button @click="cerrarSesion" class="logout-btn">Cerrar Sesión</button>
       </template>
     </div>
@@ -62,7 +70,7 @@ body {
   background: #2c3e50; 
   padding: 15px 40px; 
   display: flex; 
-  justify-content: space-between; /* Separa los links a la izquierda y botones a la derecha */
+  justify-content: space-between; 
   align-items: center;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
